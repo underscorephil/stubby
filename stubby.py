@@ -3,12 +3,13 @@ from __future__ import with_statement
 import sqlite3
 from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash
+from wtforms import Form, BooleanField, TextField, PasswordField, validators
+
 from contextlib import closing
 from flask.ext.login import (LoginManager, current_user, login_required,
                             login_user, logout_user, UserMixin, AnonymousUser,
                             confirm_login, fresh_login_required)
 
-from pprint import pprint as pp
 
 # configuration
 DATABASE = '/tmp/redirect.db'
@@ -24,10 +25,6 @@ app.config.from_object(__name__)
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
 
-login_manager = LoginManager()
-login_manager.login_view = 'login'
-login_manager.init_app(app)
-
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
@@ -38,9 +35,6 @@ def init_db():
             db.cursor().executescript(f.read())
         db.commit()
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(user_id)
 
 @app.before_request
 def before_request():
@@ -72,51 +66,51 @@ def add_entry():
     flash('New entry was successfully posted')
     return redirect(url_for('show_entries'))
 
-
-
-class User(UserMixin):
-    def __init__(self, name, id, active=True):
-        self.name = name
-        self.id = id
-        self.active = active
-
-    def is_active(self):
-        return self.active
-
-
-class Anonymous(AnonymousUser):
-    name = u"Anonymous"
-
-
-USERS = {
-    1: User(u"Notch", 1),
-    2: User(u"Steve", 2),
-    3: User(u"Creeper", 3, False),
-}
-
-USER_NAMES = dict((u.name, u) for u in USERS.itervalues())
-
 login_manager = LoginManager()
-
-login_manager.anonymous_user = Anonymous
-login_manager.login_view = "login"
-login_manager.login_message = u"Please log in to access this page."
-login_manager.refresh_view = "reauth"
+login_manager.setup_app(app)
 
 @login_manager.user_loader
-def load_user(id):
-    return USERS.get(int(id))
-
-@app.route("/secret")
-@fresh_login_required
-def secret():
-    return render_template("secret.html")
-
+def load_user(userid):
+    return User.get(userid)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == "POST" and "username" in request.form:
-        username = request.form["username"]
+    form = LoginForm(request.form)
+    if request.method == 'POST':
+        # login and validate the user...
+        user = User(form.username.data, form.password.data)
+        login_user(user) # the user object from DB
+        flash("Logged in successfully.")
+        return redirect(request.args.get("next") or url_for("admin"))
+    return render_template("login.html", form=form)
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(somewhere)
+
+class LoginForm():
+    username = TextField('Username')
+    password = TextField('Password')
+
+
+class User(username, password, email):
+    self.username = username
+    self.password = password
+    self.email = email
+
+    def login(self, username, password):
+        ## sql look up compare with vars
+
+    def get(self, userid):
+        ## sql look up get user object, id, username, email
+
+if __name__ == '__main__':
+    app.run()
+
+
         if username in USER_NAMES:
             remember = request.form.get("remember", "no") == "yes"
             if login_user(USER_NAMES[username], remember=remember):
