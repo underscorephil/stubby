@@ -89,58 +89,26 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(somewhere)
+    return redirect(url_for("index"))
 
 class LoginForm():
     username = TextField('Username')
     password = TextField('Password')
 
 
-class User(username, password, email):
-    self.username = username
-    self.password = password
-    self.email = email
+class User(UserMixin):
+    def __init__(seflf, username, password, email):
+        self.username = username
+        self.password = password
+        self.email = email
 
     def login(self, username, password):
         ## sql look up compare with vars
+        return True
 
     def get(self, userid):
         ## sql look up get user object, id, username, email
-
-if __name__ == '__main__':
-    app.run()
-
-
-        if username in USER_NAMES:
-            remember = request.form.get("remember", "no") == "yes"
-            if login_user(USER_NAMES[username], remember=remember):
-                flash("Logged in!")
-                return redirect(request.args.get("next") or url_for("index"))
-            else:
-                flash("Sorry, but you could not log in.")
-        else:
-            flash(u"Invalid username.")
-    return render_template("login.html")
-
-
-@app.route("/reauth", methods=["GET", "POST"])
-@login_required
-def reauth():
-    if request.method == "POST":
-        confirm_login()
-        flash(u"Reauthenticated.")
-        return redirect(request.args.get("next") or url_for("index"))
-    return render_template("reauth.html")
-
-
-@app.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    flash("Logged out.")
-    return redirect(url_for("index"))
-
-
+        return True
 
 if __name__ == '__main__':
     app.run()
