@@ -15,8 +15,6 @@ from pprint import pprint as pp
 DATABASE = '/tmp/redirect.db'
 DEBUG = True
 SECRET_KEY = 'development key'
-USERNAME = 'admin'
-PASSWORD = 'default'
 
 
 # create our little application :)
@@ -44,6 +42,9 @@ login_manager = LoginManager()
 login_manager.setup_app(app)
 
 login_manager.login_view = "login"
+login_manager.login_message = "Please login to access this feature"
+login_manager.refresh_view = "reauth"
+
 
 
 @app.teardown_request
@@ -52,16 +53,19 @@ def teardown_request(exception):
 
 
 @app.route('/stubs')
-def stubs():
-    cur = g.db.execute('select url_source, url_stub, create_date from stubs order create_date desc')
-    stubs = [dict(url_source=row[0], url_stub=row[1]) for row in cur.fetchall()]
-    return render_template('stubs.html', stubs=stubs)
-
-@app.route('/add', methods=['POST'])
 @login_required
-def add_entry():
+def stubs():
+    form = SubsAddForm(request.form)
+    cur = g.db.execute('select url_source, url_stub, create_date from stubs order by create_date')
+    stubs = [dict(url_source=row[0], url_stub=row[1]) for row in cur.fetchall()]
+    return render_template('stubs.html', stubs=stubs, form=form)
+
+@app.route('/stubs/add', methods=['POST'])
+@login_required
+def stubs_add():
+    form = SubsAddForm(request.form)
     g.db.execute('insert into stubs (url_source, url_stub) values (?, ?)',
-                 [request.form['url_source'], request.form['url_stub']])
+                 [form.url_source.data, form.url_stub.data])
     g.db.commit()
     flash('Stub created')
     return redirect(url_for('stubs'))
@@ -82,7 +86,7 @@ def login():
             user = User(form.username.data, form.password.data)
             if login_user(user):
                 flash("Logged in successfully.")
-                return redirect(request.args.get("next") or urL_for("stubs"))
+                return redirect(request.args.get("next") or url_for("stubs"))
 
             else:
                 flash("Login unsucessful")
@@ -97,7 +101,16 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(urL_for("stubs"))
+    return redirect(url_for("stubs"))
+
+@app.route("/reauth", methods=["GET", "POST"])
+@login_required
+def reauth():
+    if request.method == "POST":
+        confirm_login()
+        flash(u"Reauthenticated.")
+        return redirect(request.args.get("next") or url_for("stubs"))
+    return render_template("reauth.html")
 
 
 @app.route("/user/add", methods=["GET", "POST"])
@@ -111,11 +124,11 @@ def user_add():
         flash('User added...')
     return render_template("add.html", form=form)
 
-@app.route('/<short_url>')
-def redirect_short_url(short_url):
-    stub = query_db('select uri from entries where short_url="%s"' % short_url)
+@app.route('/<stub>')
+def redirect_stub(stub):
+    stub = query_db('select url_source from stubs where url_stub="%s"' % stub)
     if stub:
-        return redirect(url)
+        return redirect(stub[0]['url_source'])
     else:
         return redirect("http://google.com")
 
@@ -124,6 +137,10 @@ def query_db(query, args=(), one=False):
     rv = [dict((cur.description[idx][0], value)
                for idx, value in enumerate(row)) for row in cur.fetchall()]
     return (rv[0] if rv else None) if one else rv
+
+class SubsAddForm(Form):
+    url_source = TextField('Source URL')
+    url_stub = TextField('Stub URL')
 
 class LoginForm(Form):
     username = TextField('Username')

@@ -1,7 +1,7 @@
 drop table if exists stubs;
 create table stubs (
-  url_source string primary key not null,
-  url_stub string not null,
+  url_stub string primary key not null,
+  url_source string not null,
   create_date datetime default current_timestamp
 );
 drop table if exists users;
