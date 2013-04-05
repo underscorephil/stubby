@@ -64,11 +64,48 @@ def stubs():
 @login_required
 def stubs_add():
     form = SubsAddForm(request.form)
-    g.db.execute('insert into stubs (url_source, url_stub) values (?, ?)',
-                 [form.url_source.data, form.url_stub.data])
-    g.db.commit()
-    flash('Stub created')
-    return redirect(url_for('stubs'))
+    stub = Stub(form.url_source.data, form.url_stub.data)
+    if stub.add()
+        flash("Stub %s created..." % stub.url_stub)
+        return url_for(stubs)
+
+    flash("Stub not created...")
+    return url_for(stubs)
+
+
+class Stub():
+    def __init__(self, url_source=None, url_stub=None):
+        self.url_soruce = url_soruce
+        self.url_stub = url_stub
+        
+    def add(self):
+        g.db.execute('insert into stubs (url_source, url_stub) values (?, ?)',
+            [self.url_source, self.url_stub])
+        try:
+            g.db.commit()
+            flash("Stub %s Added" % self.url_stub)
+            return True
+        except:
+            flash("Stub creation failed")
+            return False
+
+    @classmethod
+    def get(self, url_stub):
+        cur = g.db.execute('select url_source, url_stub from stubs where url_stub="%s"' % url_stub)
+        res = str(cur.fetchone()[0])
+        stub = self(res[0], "", res[1])
+        return stub
+
+    def remove(self):
+        g.db.execute('delete from stubs where url_stub=%s and url_source=%s' % self.url_stub, self.url_source)
+        try:
+            g.db.commit()
+            return True
+        except:
+            return False
+
+    def log(self):
+        # log request
 
 
 @login_manager.user_loader
@@ -80,14 +117,16 @@ def login():
     form = LoginForm(request.form)
     if request.method == 'POST':
         # login and validate the user...
-        cur = g.db.execute('select password from users where username="%s"' % form.username.data)
-        db_user = str(cur.fetchone()[0])
-        if db_user == form.password.data:
+        cur = g.db.execute('select password from users where username="%s" LIMIT 1' % form.username.data)
+        db_user = cur.fetchone()
+        if not db_user:
+            flash("Login unsucessful")
+            return redirect(url_for('login'))
+        if str(db_user[0]) == form.password.data:
             user = User(form.username.data, form.password.data)
             if login_user(user):
                 flash("Logged in successfully.")
                 return redirect(request.args.get("next") or url_for("stubs"))
-
             else:
                 flash("Login unsucessful")
                 return redirect(url_for("login"))
@@ -126,11 +165,12 @@ def user_add():
 
 @app.route('/<stub>')
 def redirect_stub(stub):
-    stub = query_db('select url_source from stubs where url_stub="%s"' % stub)
+    stub = Stub.get(stub)
     if stub:
-        return redirect(stub[0]['url_source'])
+        return redirect(stub.url_source)
     else:
-        return redirect("http://google.com")
+        flash("Stub not found")
+        return redirect(url_for("stubs"))
 
 def query_db(query, args=(), one=False):
     cur = g.db.execute(query, args)

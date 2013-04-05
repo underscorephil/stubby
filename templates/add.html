@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% from "_formhelpers.html" import render_field %}
+{% block body %}
+  <h2>Create User</h2>
+  {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
+  <form action="{{ url_for('user_add') }}" method=post>  
+    <dl>
+      {{ render_field(form.username) }}
+      {{ render_field(form.password) }}    
+      {{ render_field(form.confirm_password) }}    
+      {{ render_field(form.email) }}    
+      {{ render_field(form.confirm_email) }}      
+      <p><input type=submit value="Add User">
+    </dl>
+  </form>
+{% endblock %}
+
