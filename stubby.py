@@ -67,15 +67,15 @@ def stubs_add():
     stub = Stub(form.url_source.data, form.url_stub.data)
     if stub.add()
         flash("Stub %s created..." % stub.url_stub)
-        return url_for(stubs)
+        return redirect(url_for("stubs"))
 
     flash("Stub not created...")
-    return url_for(stubs)
+    return redirect(url_for("stubs"))
 
 
 class Stub():
     def __init__(self, url_source=None, url_stub=None):
-        self.url_soruce = url_soruce
+        self.url_source = url_source
         self.url_stub = url_stub
         
     def add(self):
@@ -93,7 +93,9 @@ class Stub():
     def get(self, url_stub):
         cur = g.db.execute('select url_source, url_stub from stubs where url_stub="%s"' % url_stub)
         res = str(cur.fetchone()[0])
-        stub = self(res[0], "", res[1])
+        stub = None
+        if res[0] and res[1]:
+            stub = self(res[0], "", res[1])
         return stub
 
     def remove(self):
