@@ -2,7 +2,7 @@
 from __future__ import with_statement
 import sqlite3
 from flask import Flask, request, session, g, redirect, url_for, \
-     abort, render_template, flash
+     abort, render_template, flash, Blueprint
 from wtforms import Form, BooleanField, TextField, PasswordField, validators
 
 from contextlib import closing
@@ -11,21 +11,25 @@ from flask.ext.login import (LoginManager, current_user, login_required,
                             confirm_login, fresh_login_required)
 from pprint import pprint as pp
 
-# configuration
 DATABASE = '/tmp/redirect.db'
 DEBUG = True
 SECRET_KEY = 'development key'
 
 
-# create our little application :)
+redirect_module = Blueprint('redirect', __name__, template_folder='templates')
+admin_module = Blueprint('admin', __name__, template_folder='templates')
+
+
 app = Flask(__name__)
 app.config.from_object(__name__)
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
-
+app.register_blueprint(admin_module, url_prefix='/admin')
+app.register_blueprint(redirect_module, url_prefix='/')
 
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
+
 
 def init_db():
     with closing(connect_db()) as db:
@@ -38,46 +42,17 @@ def init_db():
 def before_request():
     g.db = connect_db()
 
-login_manager = LoginManager()
-login_manager.setup_app(app)
-
-login_manager.login_view = "login"
-login_manager.login_message = "Please login to access this feature"
-login_manager.refresh_view = "reauth"
-
-
 
 @app.teardown_request
 def teardown_request(exception):
     g.db.close()
 
 
-@app.route('/stubs')
-@login_required
-def stubs():
-    form = SubsAddForm(request.form)
-    cur = g.db.execute('select url_source, url_stub, create_date from stubs order by create_date')
-    stubs = [dict(url_source=row[0], url_stub=row[1]) for row in cur.fetchall()]
-    return render_template('stubs.html', stubs=stubs, form=form)
-
-@app.route('/stubs/add', methods=['POST'])
-@login_required
-def stubs_add():
-    form = SubsAddForm(request.form)
-    stub = Stub(form.url_source.data, form.url_stub.data)
-    if stub.add()
-        flash("Stub %s created..." % stub.url_stub)
-        return redirect(url_for("stubs"))
-
-    flash("Stub not created...")
-    return redirect(url_for("stubs"))
-
-
 class Stub():
     def __init__(self, url_source=None, url_stub=None):
         self.url_source = url_source
         self.url_stub = url_stub
-        
+
     def add(self):
         g.db.execute('insert into stubs (url_source, url_stub) values (?, ?)',
             [self.url_source, self.url_stub])
@@ -91,15 +66,17 @@ class Stub():
 
     @classmethod
     def get(self, url_stub):
-        cur = g.db.execute('select url_source, url_stub from stubs where url_stub="%s"' % url_stub)
-        res = str(cur.fetchone()[0])
-        stub = None
-        if res[0] and res[1]:
-            stub = self(res[0], "", res[1])
+        stub = False
+        cur = g.db.execute('select url_source, url_stub from stubs where url_stub=?',
+            [url_stub])
+        res = cur.fetchone()
+        if res:
+            stub = self(res[0], res[1])
         return stub
 
     def remove(self):
-        g.db.execute('delete from stubs where url_stub=%s and url_source=%s' % self.url_stub, self.url_source)
+        g.db.execute('delete from stubs where url_stub=? and url_source=?',
+            [self.url_stub, self.url_source])
         try:
             g.db.commit()
             return True
@@ -108,98 +85,14 @@ class Stub():
 
     def log(self):
         # log request
+        return
 
-
-@login_manager.user_loader
-def load_user(userid):
-    return User.get(userid)
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    form = LoginForm(request.form)
-    if request.method == 'POST':
-        # login and validate the user...
-        cur = g.db.execute('select password from users where username="%s" LIMIT 1' % form.username.data)
-        db_user = cur.fetchone()
-        if not db_user:
-            flash("Login unsucessful")
-            return redirect(url_for('login'))
-        if str(db_user[0]) == form.password.data:
-            user = User(form.username.data, form.password.data)
-            if login_user(user):
-                flash("Logged in successfully.")
-                return redirect(request.args.get("next") or url_for("stubs"))
-            else:
-                flash("Login unsucessful")
-                return redirect(url_for("login"))
-        else:
-            flash("Login failed...")
-            return redirect(url_for("login"))
-    return render_template("login.html", form=form)
-
-
-@app.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for("stubs"))
-
-@app.route("/reauth", methods=["GET", "POST"])
-@login_required
-def reauth():
-    if request.method == "POST":
-        confirm_login()
-        flash(u"Reauthenticated.")
-        return redirect(request.args.get("next") or url_for("stubs"))
-    return render_template("reauth.html")
-
-
-@app.route("/user/add", methods=["GET", "POST"])
-@login_required
-def user_add():
-    form = UserAddForm(request.form)
-    if request.method == 'POST' and form.validate():
-        g.db.execute('insert into users (username, password, email) values (?, ?, ?)',
-            [request.form['username'], request.form['password'], request.form['email']])
-        g.db.commit()
-        flash('User added...')
-    return render_template("add.html", form=form)
-
-@app.route('/<stub>')
-def redirect_stub(stub):
-    stub = Stub.get(stub)
-    if stub:
-        return redirect(stub.url_source)
-    else:
-        flash("Stub not found")
-        return redirect(url_for("stubs"))
 
 def query_db(query, args=(), one=False):
     cur = g.db.execute(query, args)
     rv = [dict((cur.description[idx][0], value)
                for idx, value in enumerate(row)) for row in cur.fetchall()]
     return (rv[0] if rv else None) if one else rv
-
-class SubsAddForm(Form):
-    url_source = TextField('Source URL')
-    url_stub = TextField('Stub URL')
-
-class LoginForm(Form):
-    username = TextField('Username')
-    password = PasswordField('Password')
-
-class UserAddForm(Form):
-    username = TextField('Username')
-    password = PasswordField('New Password', [
-        validators.Required(),
-        validators.EqualTo('confirm_password', message='Passwords must match')
-    ])
-    confirm_password = PasswordField('Repeat Password')
-    email = TextField('Email', [
-        validators.Required(),
-        validators.EqualTo('confirm_email', message='Emails do not match')
-    ])
-    confirm_email = TextField('Repeat email')
 
 
 class User(UserMixin):
@@ -220,7 +113,8 @@ class User(UserMixin):
     @classmethod
     def get(self, user_id):
         ## db grab that user
-        cur = g.db.execute('select username, email from users where id="%s"' % user_id)
+        cur = g.db.execute('select username, email from users where id=?',
+            [user_id])
         db_user = str(cur.fetchone()[0])
         new_user = self(db_user[0], "", db_user[1])
         new_user.is_valid = True
@@ -230,4 +124,3 @@ class User(UserMixin):
 
 if __name__ == '__main__':
     app.run()
-

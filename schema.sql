@@ -11,3 +11,9 @@ create table users (
     password string not null,
     email string not null
 );
+drop table if exists requests;
+create table requests (
+    id integer primary key,
+    remote_addr string not null,
+    stub string not null
+)
