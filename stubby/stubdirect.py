@@ -1,5 +1,5 @@
-from flask import Blueprint
 from __future__ import with_statement
+from flask import Blueprint
 import sqlite3
 from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash, Blueprint
@@ -8,10 +8,9 @@ from contextlib import closing
 from flask.ext.login import (LoginManager, current_user, login_required,
                             login_user, logout_user, UserMixin, AnonymousUser,
                             confirm_login, fresh_login_required)
-from stubby import User, Stub
 from pprint import pprint as pp
 
-blueprint = Blueprint('redirect', __name__)
+blueprint = Blueprint('stubdirect', __name__)
 
 
 @blueprint.route('/<stub>')
