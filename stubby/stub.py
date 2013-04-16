@@ -1,3 +1,10 @@
+from flask import g, app, Blueprint, current_app
+from contextlib import closing
+import sqlite3
+
+blueprint = Blueprint('stub', __name__)
+
+
 class Stub():
     def __init__(self, url_source=None, url_stub=None):
         self.url_source = url_source

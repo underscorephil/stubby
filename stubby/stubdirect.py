@@ -10,6 +10,7 @@ from flask.ext.login import (LoginManager, current_user, login_required,
                             confirm_login, fresh_login_required)
 from pprint import pprint as pp
 
+
 blueprint = Blueprint('stubdirect', __name__)
 
 

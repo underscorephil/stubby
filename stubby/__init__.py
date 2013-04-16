@@ -18,12 +18,19 @@ SECRET_KEY = 'development key'
 
 import admin
 import stubdirect
+import db
+import stub
+import stubuser
 
 app = Flask(__name__)
+app.debug = True
 app.config.from_object(__name__)
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 app.register_blueprint(admin.blueprint, url_prefix='/admin')
 app.register_blueprint(stubdirect.blueprint)
+app.register_blueprint(db.blueprint)
+app.register_blueprint(stub.blueprint)
+app.register_blueprint(stubuser.blueprint)
 
 
 @app.before_request
@@ -43,4 +50,4 @@ def query_db(query, args=(), one=False):
     return (rv[0] if rv else None) if one else rv
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')

@@ -1,10 +1,12 @@
-from flask import g, app
+from flask import g, app, Blueprint, current_app
 from contextlib import closing
 import sqlite3
 
+blueprint = Blueprint('db', __name__)
+
 
 def connect_db():
-    return sqlite3.connect(app.config['DATABASE'])
+    return sqlite3.connect(current_app.config['DATABASE'])
 
 
 def init_db():

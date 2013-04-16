@@ -10,15 +10,9 @@ from flask.ext.login import (LoginManager, current_user, login_required,
                             confirm_login, fresh_login_required)
 from pprint import pprint as pp
 
-blueprint = Blueprint('admin', __name__)
+blueprint = Blueprint('admin', __name__, template_folder='templates')
 
 
-login_manager = LoginManager()
-login_manager.setup_app(blueprint)
-
-login_manager.login_view = "login"
-login_manager.login_message = "Please login to access this feature"
-login_manager.refresh_view = "reauth"
 
 
 class SubsAddForm(Form):
@@ -71,9 +65,7 @@ class User(UserMixin):
         new_user.id = user_id
         return new_user
 
-@login_manager.user_loader
-def load_user(userid):
-    return User.get(userid)
+
 
 
 @blueprint.route('/')
@@ -97,7 +89,7 @@ def stubs_add():
     return redirect(url_for("stubs"))
 
 
-@blueprint.route("/admin/login", methods=["GET", "POST"])
+@blueprint.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm(request.form)
     if request.method == 'POST':
