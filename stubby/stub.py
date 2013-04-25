@@ -1,15 +1,33 @@
+import string
+from random import choice
 from flask import flash
-from db import get_url_db
+from db import get_url_db, get_stats_db
 
 
 class Stub():
     def __init__(self, url_source=None, url_stub=None):
         self.url_source = url_source
-        self.url_stub = url_stub
+        self.url_stub = url_stub or self._generate_stub()
         self.db = get_url_db()
 
-    def add(self):
-        self.db.execute('insert into stubs (url_source, url_stub) values (?, ?)',
+    def _generate_stub(self, length=6, uppercase=True, lowercase=True,
+                       digits=True):
+        pool = ''
+        if uppercase:
+            pool += string.uppercase
+        if lowercase:
+            pool += string.lowercase
+        if digits:
+            pool += string.digits
+
+        if length < 1:
+            length = 1
+        return ''.join([choice(pool) for x in xrange(length)])
+
+    def save(self):
+        self.db.execute(
+            'insert into stubs (url_source, url_stub) values (?, ?) '
+            'ON CONFLICT REPLACE',
             [self.url_source, self.url_stub])
         try:
             self.db.commit()
@@ -20,17 +38,20 @@ class Stub():
             return False
 
     @classmethod
-    def get(self, url_stub):
-        stub = False
+    def get(cls, url_stub):
+        stub = None
         db = get_url_db()
-        cur = db.execute('select url_source, url_stub from stubs where url_stub=?',
+
+        cur = db.execute(
+            'select url_source, url_stub from stubs where url_stub=?',
             [url_stub])
         res = cur.fetchone()
+
         if res:
-            stub = self(res[0], res[1])
+            stub = cls(res[0], res[1])
         return stub
 
-    def remove(self):
+    def delete(self):
         self.db.execute('delete from stubs where url_stub=? and url_source=?',
             [self.url_stub, self.url_source])
         try:
@@ -39,6 +60,7 @@ class Stub():
         except:
             return False
 
-    def log(self):
-        # log request
-        pass
+    def log(self, address):
+        db = get_stats_db()
+        db.execute('insert into requests (remote_addr, stub) values (?, ?)',
+        [address, self.url_stub])
