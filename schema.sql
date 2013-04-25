@@ -16,4 +16,4 @@ create table requests (
     id integer primary key,
     remote_addr string not null,
     stub string not null
-)
+);

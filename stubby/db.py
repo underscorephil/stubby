@@ -1,7 +1,7 @@
+from flask import current_app, g
+from functools import wraps
 from contextlib import closing
 import sqlite3
-
-blueprint = Blueprint('db', __name__)
 
 
 def gattr(attr_name):
@@ -38,7 +38,7 @@ def close_stats_db():
 
 
 def init_db():
-    with closing(connect_db()) as db:
-        with app.open_resource('../schema.sql') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
+    db = get_url_db()
+    with current_app.open_resource('../schema.sql') as f:
+        db.cursor().executescript(f.read())
+    db.commit()
