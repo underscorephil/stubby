@@ -4,16 +4,9 @@ import sqlite3
 from flask.ext.login import (LoginManager, current_user, login_required,
                             login_user, logout_user, UserMixin, AnonymousUser,
                             confirm_login, fresh_login_required)
+from main import login_manager
 
 
-blueprint = Blueprint('stubuser', __name__)
-
-login_manager = LoginManager()
-login_manager.setup_app(blueprint)
-
-login_manager.login_view = "login"
-login_manager.login_message = "Please login to access this feature"
-login_manager.refresh_view = "reauth"
 
 
 @login_manager.user_loader

@@ -6,8 +6,6 @@ from flask.ext.login import (
 from db import get_url_db
 from stub import Stub
 
-#blueprint = Blueprint('admin', __name__, template_folder='templates')
-
 
 class SubsAddForm(Form):
     url_source = TextField('Source URL')
@@ -60,7 +58,6 @@ class User(UserMixin):
         return new_user
 
 
-#@blueprint.route('/')
 @login_required
 def stubs():
     form = SubsAddForm(request.form)
@@ -85,7 +82,6 @@ def stubs_add():
     return redirect(url_for("stubs"))
 
 
-#@blueprint.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm(request.form)
     if request.method == 'POST':
@@ -107,7 +103,7 @@ def login():
         else:
             flash("Login failed...")
             return redirect(url_for("login"))
-    return render_template("/admin/login.html", form=form)
+    return render_template("login.html", form=form)
 
 
 #@blueprint.route("/admin/logout")
