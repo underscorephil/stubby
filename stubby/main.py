@@ -1,28 +1,19 @@
 from flask import Flask
-from db import close_stats_db, close_url_db
-from stubdirect import redirect_stub
-from admin import stubs, login
-import stubuser
-from flask.ext.login import (LoginManager, current_user, login_required,
-                            login_user, logout_user, UserMixin, AnonymousUser,
-                            confirm_login, fresh_login_required)
+from stubby.utils.db import close_stats_db, close_url_db
 
 
 DATABASE = '/tmp/redirect.db'
 DEBUG = True
 SECRET_KEY = 'development key'
 
+
 app = Flask(__name__)
 app.debug = True
 app.config.from_object(__name__)
 app.config.from_envvar('FLASK_SETTINGS', silent=True)
 
-login_manager = LoginManager()
-login_manager.setup_app(app)
-
-login_manager.login_view = "login"
-login_manager.login_message = "Please login to access this feature"
-login_manager.refresh_view = "reauth"
+from stubby.utils.sessions import get_session_manager
+from stubby.views import admin, stub
 
 
 @app.teardown_request
@@ -32,10 +23,19 @@ def teardown_request(exception):
 
 
 def index():
-    return "Hello, and welcome"
+    return "Hello, and welcome to stubs!"
+
+login_manager = get_session_manager()
+login_manager.setup_app(app)
 
 
-app.add_url_rule('/', 'index', index)
-app.add_url_rule('/<stub>', 'stub_redirect', redirect_stub)
-app.add_url_rule('/admin', 'admin', stubs)
-app.add_url_rule('/login', 'login', login)
+app.add_url_rule('/', endpoint='index', view_func=index)
+app.add_url_rule('/<stub>', endpoint='stub_redirect',
+                 view_func=stub.redirect_stub)
+app.add_url_rule('/admin', endpoint='admin', view_func=admin.index)
+app.add_url_rule('/login', endpoint='login', view_func=admin.login,
+                 methods=['GET', 'POST'])
+app.add_url_rule('/logout', endpoint='logout', view_func=admin.logout)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0")

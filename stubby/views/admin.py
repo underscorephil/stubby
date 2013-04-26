@@ -3,8 +3,15 @@ from flask import request, g, redirect, url_for, \
 from wtforms import Form, TextField, PasswordField, validators
 from flask.ext.login import (
     login_required, login_user, logout_user, UserMixin, confirm_login)
-from db import get_url_db
-from stub import Stub
+from stubby.utils.db import get_url_db
+from stubby.utils.sessions import get_session_manager
+from stubby.models.stub import Stub
+
+
+login_manager = get_session_manager()
+login_manager.login_view = "login"
+login_manager.login_message = "Please login to access this feature"
+login_manager.refresh_view = "reauth"
 
 
 class SubsAddForm(Form):
@@ -59,7 +66,7 @@ class User(UserMixin):
 
 
 @login_required
-def stubs():
+def index():
     form = SubsAddForm(request.form)
     db = get_url_db()
     cur = db.execute(
@@ -86,8 +93,9 @@ def login():
     form = LoginForm(request.form)
     if request.method == 'POST':
         # login and validate the user...
-        cur = g.db.execute('select password from users where username=? LIMIT 1',
-            [form.username.data])
+        db = get_url_db()
+        cur = db.execute('select password from users where username=? LIMIT 1',
+                         [form.username.data])
         db_user = cur.fetchone()
         if not db_user:
             flash("Login unsucessful")
@@ -96,7 +104,7 @@ def login():
             user = User(form.username.data, form.password.data)
             if login_user(user):
                 flash("Logged in successfully.")
-                return redirect(request.args.get("next") or url_for("stubs"))
+                return redirect(request.args.get("next") or url_for("admin"))
             else:
                 flash("Login unsucessful")
                 return redirect(url_for("login"))
@@ -127,8 +135,9 @@ def reauth():
 @login_required
 def user_add():
     form = UserAddForm(request.form)
+    db = get_url_db()
     if request.method == 'POST' and form.validate():
-        g.db.execute('insert into users (username, password, email) values (?, ?, ?)',
+        db.execute('insert into users (username, password, email) values (?, ?, ?)',
             [request.form['username'], request.form['password'], request.form['email']])
         g.db.commit()
         flash('User added...')

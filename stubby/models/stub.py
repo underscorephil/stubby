@@ -1,7 +1,7 @@
 import string
 from random import choice
 from flask import flash
-from db import get_url_db, get_stats_db
+from stubby.utils.db import get_url_db, get_stats_db
 
 
 class Stub():

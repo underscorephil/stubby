@@ -1,12 +1,19 @@
-from flask import g, app, Blueprint, current_app
-from contextlib import closing
-import sqlite3
-from flask.ext.login import (LoginManager, current_user, login_required,
-                            login_user, logout_user, UserMixin, AnonymousUser,
-                            confirm_login, fresh_login_required)
-from main import login_manager
+from flask import request, redirect, flash, url_for
+from stubby.models import Stub
+from stubby.utils.db import get_url_db
+from flask.ext.login import UserMixin
 
+from stubby.utils.sessions import get_session_manager
+login_manager = get_session_manager()
 
+def redirect_stub(stub=None):
+    stub = Stub.get(stub)
+    if stub:
+        stub.log(request.remote_addr)
+        return redirect(stub.url_source)
+    else:
+        flash("Stub not found")
+        return redirect(url_for("index"))
 
 
 @login_manager.user_loader
@@ -32,7 +39,8 @@ class User(UserMixin):
     @classmethod
     def get(self, user_id):
         ## db grab that user
-        cur = g.db.execute('select username, email from users where id=?',
+        db = get_url_db()
+        cur = db.execute('select username, email from users where id=?',
             [user_id])
         db_user = str(cur.fetchone()[0])
         new_user = self(db_user[0], "", db_user[1])
