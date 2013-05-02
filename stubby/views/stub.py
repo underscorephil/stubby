@@ -6,6 +6,7 @@ from flask.ext.login import UserMixin
 from stubby.utils.sessions import get_session_manager
 login_manager = get_session_manager()
 
+
 def redirect_stub(stub=None):
     stub = Stub.get(stub)
     if stub:

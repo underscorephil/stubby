@@ -32,10 +32,21 @@ login_manager.setup_app(app)
 app.add_url_rule('/', endpoint='index', view_func=index)
 app.add_url_rule('/<stub>', endpoint='stub_redirect',
                  view_func=stub.redirect_stub)
+
 app.add_url_rule('/admin', endpoint='admin', view_func=admin.index)
+
+app.add_url_rule('/admin/stub/add', view_func=admin.stubs_add,
+                 methods=['POST'])
+app.add_url_rule('/admin/stub/delete/<id>', view_func=admin.stubs_delete,
+                 methods=['GET'])
+
 app.add_url_rule('/login', endpoint='login', view_func=admin.login,
                  methods=['GET', 'POST'])
+
 app.add_url_rule('/logout', endpoint='logout', view_func=admin.logout)
+
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0")

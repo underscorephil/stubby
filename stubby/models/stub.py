@@ -3,6 +3,7 @@ from random import choice
 from flask import flash
 from stubby.utils.db import get_url_db, get_stats_db
 
+from pprint import pprint as pp
 
 class Stub():
     def __init__(self, url_source=None, url_stub=None):
@@ -25,9 +26,9 @@ class Stub():
         return ''.join([choice(pool) for x in xrange(length)])
 
     def save(self):
+        pp(self.url_stub)
         self.db.execute(
-            'insert into stubs (url_source, url_stub) values (?, ?) '
-            'ON CONFLICT REPLACE',
+            'insert into stubs (url_source, url_stub) values (?, ?)',
             [self.url_source, self.url_stub])
         try:
             self.db.commit()
@@ -52,12 +53,15 @@ class Stub():
         return stub
 
     def delete(self):
+        pp(unicode(self.url_stub))
         self.db.execute('delete from stubs where url_stub=? and url_source=?',
             [self.url_stub, self.url_source])
         try:
             self.db.commit()
+            flash("Stub %s deleted" % self.url_stub)
             return True
         except:
+            flash("Stub %s not deleted" % self.url_stub)
             return False
 
     def log(self, address):

@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% from "_formhelpers.html" import render_field %}
 {% block body %}
-  <form action="{{ url_for('admin.stubs_add') }}" method=post class=add-entry>
+  <form action="{{ 'admin/stub/add' }}" method=post class=add-entry>
     <dl>
       {{ render_field(form.url_source) }}
       {{ render_field(form.url_stub) }}    
@@ -9,8 +9,13 @@
     </dl>
   </form>
 <table class=entries>
+  <tr><th>Source</th><th>Stub</th></tr>
   {% for stub in stubs %}
-    <tr><td>{{ stub.url_source }}</td><td>{{ stub.url_stub|safe }}</td></tr>
+    <tr>
+      <td>{{ stub.url_source }}</td>
+      <td>{{ stub.url_stub|safe }}</td>
+      <td><a href="admin/stub/delete/{{ stub.url_stub }}">delete</a>
+    </tr>
   {% else %}
     <li><em>Missing the stubs...</em>
   {% endfor %}

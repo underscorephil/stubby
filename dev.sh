@@ -1,6 +1,6 @@
 #!/bin/sh
 
-python -B setup.py develop --user
+python -B setup.py develop
 python -B stubby/main.py
 
 

@@ -6,7 +6,7 @@ from flask.ext.login import (
 from stubby.utils.db import get_url_db
 from stubby.utils.sessions import get_session_manager
 from stubby.models.stub import Stub
-
+from pprint import pprint as pp
 
 login_manager = get_session_manager()
 login_manager.login_view = "login"
@@ -77,16 +77,19 @@ def index():
     return render_template('stubs.html', stubs=stubs, form=form)
 
 
-#@blueprint.route('/admin/stubs/add', methods=['POST'])
 @login_required
 def stubs_add():
     form = SubsAddForm(request.form)
     stub = Stub(form.url_source.data, form.url_stub.data)
-    if stub.add():
-        flash("Stub %s created..." % stub.url_stub)
-        return redirect(url_for("stubs"))
-    flash("Stub not created...")
-    return redirect(url_for("stubs"))
+    stub.save()
+    return redirect(url_for("admin"))
+
+
+@login_required
+def stubs_delete(id):
+    stub = Stub(url_stub=id)
+    stub.delete()
+    return redirect(url_for("admin"))
 
 
 def login():
@@ -114,24 +117,21 @@ def login():
     return render_template("login.html", form=form)
 
 
-#@blueprint.route("/admin/logout")
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for("stubs"))
+    return redirect(url_for("admin"))
 
 
-#@blueprint.route("/admin/reauth", methods=["GET", "POST"])
 @login_required
 def reauth():
     if request.method == "POST":
         confirm_login()
         flash(u"Reauthenticated.")
-        return redirect(request.args.get("next") or url_for("stubs"))
+        return redirect(request.args.get("next") or url_for("admin"))
     return render_template("reauth.html")
 
 
-#@blueprint.route("/user/add", methods=["GET", "POST"])
 @login_required
 def user_add():
     form = UserAddForm(request.form)
