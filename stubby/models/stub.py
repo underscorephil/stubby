@@ -53,7 +53,7 @@ class Stub():
         return stub
 
     def delete(self):
-        pp(unicode(self.url_stub))
+        pp(self.url_stub)
         self.db.execute('delete from stubs where url_stub=? and url_source=?',
             [self.url_stub, self.url_source])
         try:
