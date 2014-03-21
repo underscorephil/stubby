@@ -1,22 +1,11 @@
-from __future__ import with_statement
-from flask import Blueprint
-import sqlite3
-from flask import Flask, request, session, g, redirect, url_for, \
-     abort, render_template, flash, Blueprint
-from wtforms import Form, BooleanField, TextField, PasswordField, validators
-from contextlib import closing
-from flask.ext.login import (LoginManager, current_user, login_required,
-                            login_user, logout_user, UserMixin, AnonymousUser,
-                            confirm_login, fresh_login_required)
-from pprint import pprint as pp
+from flask import request, redirect, flash, url_for
+from stub import Stub
+from db import get_url_db
 
 
-blueprint = Blueprint('stubdirect', __name__)
-
-
-@blueprint.route('/<stub>')
-def redirect_stub(stub):
-    g.db.execute('insert into requests (remote_addr, stub) values (?, ?)',
+def redirect_stub(stub=None):
+    db = get_url_db()
+    db.execute('insert into requests (remote_addr, stub) values (?, ?)',
         [request.remote_addr, request.path])
     stub = Stub.get(stub)
     if stub:

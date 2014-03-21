@@ -1,18 +1,12 @@
-from __future__ import with_statement
-from flask import Blueprint, app, g
-import sqlite3
-from flask import Flask, request, session, g, redirect, url_for, \
-     abort, render_template, flash, Blueprint
-from wtforms import Form, BooleanField, TextField, PasswordField, validators
-from contextlib import closing
-from flask.ext.login import (LoginManager, current_user, login_required,
-                            login_user, logout_user, UserMixin, AnonymousUser,
-                            confirm_login, fresh_login_required)
-from pprint import pprint as pp
+from flask import request, g, redirect, url_for, \
+    render_template, flash
+from wtforms import Form, TextField, PasswordField, validators
+from flask.ext.login import (
+    login_required, login_user, logout_user, UserMixin, confirm_login)
+from db import get_url_db
+from stub import Stub
 
-blueprint = Blueprint('admin', __name__, template_folder='templates')
-
-
+#blueprint = Blueprint('admin', __name__, template_folder='templates')
 
 
 class SubsAddForm(Form):
@@ -58,7 +52,7 @@ class User(UserMixin):
     def get(self, user_id):
         ## db grab that user
         cur = g.db.execute('select username, email from users where id=?',
-            [user_id])
+                           [user_id])
         db_user = str(cur.fetchone()[0])
         new_user = self(db_user[0], "", db_user[1])
         new_user.is_valid = True
@@ -66,18 +60,20 @@ class User(UserMixin):
         return new_user
 
 
-
-
-@blueprint.route('/')
+#@blueprint.route('/')
 @login_required
 def stubs():
     form = SubsAddForm(request.form)
-    cur = g.db.execute('select url_source, url_stub, create_date from stubs order by create_date')
-    stubs = [dict(url_source=row[0], url_stub=row[1]) for row in cur.fetchall()]
+    db = get_url_db()
+    cur = db.execute(
+        'select url_source, url_stub, create_date '
+        'from stubs order by create_date')
+    stubs = [
+        dict(url_source=row[0], url_stub=row[1]) for row in cur.fetchall()]
     return render_template('stubs.html', stubs=stubs, form=form)
 
 
-@blueprint.route('/admin/stubs/add', methods=['POST'])
+#@blueprint.route('/admin/stubs/add', methods=['POST'])
 @login_required
 def stubs_add():
     form = SubsAddForm(request.form)
@@ -89,7 +85,7 @@ def stubs_add():
     return redirect(url_for("stubs"))
 
 
-@blueprint.route("/login", methods=["GET", "POST"])
+#@blueprint.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm(request.form)
     if request.method == 'POST':
@@ -114,14 +110,14 @@ def login():
     return render_template("/admin/login.html", form=form)
 
 
-@blueprint.route("/admin/logout")
+#@blueprint.route("/admin/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for("stubs"))
 
 
-@blueprint.route("/admin/reauth", methods=["GET", "POST"])
+#@blueprint.route("/admin/reauth", methods=["GET", "POST"])
 @login_required
 def reauth():
     if request.method == "POST":
@@ -131,7 +127,7 @@ def reauth():
     return render_template("reauth.html")
 
 
-@blueprint.route("/user/add", methods=["GET", "POST"])
+#@blueprint.route("/user/add", methods=["GET", "POST"])
 @login_required
 def user_add():
     form = UserAddForm(request.form)

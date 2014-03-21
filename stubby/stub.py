@@ -1,20 +1,18 @@
-from flask import g, app, Blueprint, current_app
-from contextlib import closing
-import sqlite3
-
-blueprint = Blueprint('stub', __name__)
+from flask import flash
+from db import get_url_db
 
 
 class Stub():
     def __init__(self, url_source=None, url_stub=None):
         self.url_source = url_source
         self.url_stub = url_stub
+        self.db = get_url_db()
 
     def add(self):
-        g.db.execute('insert into stubs (url_source, url_stub) values (?, ?)',
+        self.db.execute('insert into stubs (url_source, url_stub) values (?, ?)',
             [self.url_source, self.url_stub])
         try:
-            g.db.commit()
+            self.db.commit()
             flash("Stub %s Added" % self.url_stub)
             return True
         except:
@@ -24,7 +22,8 @@ class Stub():
     @classmethod
     def get(self, url_stub):
         stub = False
-        cur = g.db.execute('select url_source, url_stub from stubs where url_stub=?',
+        db = get_url_db()
+        cur = db.execute('select url_source, url_stub from stubs where url_stub=?',
             [url_stub])
         res = cur.fetchone()
         if res:
@@ -32,14 +31,14 @@ class Stub():
         return stub
 
     def remove(self):
-        g.db.execute('delete from stubs where url_stub=? and url_source=?',
+        self.db.execute('delete from stubs where url_stub=? and url_source=?',
             [self.url_stub, self.url_source])
         try:
-            g.db.commit()
+            self.db.commit()
             return True
         except:
             return False
 
     def log(self):
         # log request
-        return
+        pass
