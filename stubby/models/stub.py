@@ -54,10 +54,11 @@ class Stub():
 
     def delete(self):
         pp(self.url_stub)
-        self.db.execute('delete from stubs where url_stub=? and url_source=?',
-            [self.url_stub, self.url_source])
+        self.db.execute('delete from stubs where url_stub=?',
+            [self.url_stub])
         try:
             self.db.commit()
+            # commit() returns true check if the delete occured(effected rules)
             flash("Stub %s deleted" % self.url_stub)
             return True
         except:

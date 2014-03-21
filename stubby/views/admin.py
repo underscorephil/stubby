@@ -7,7 +7,7 @@ from stubby.utils.db import get_url_db
 from stubby.utils.sessions import get_session_manager
 from stubby.models.stub import Stub
 from pprint import pprint as pp
-
+from stubby.main import db
 login_manager = get_session_manager()
 login_manager.login_view = "login"
 login_manager.login_message = "Please login to access this feature"
@@ -38,31 +38,13 @@ class UserAddForm(Form):
     confirm_email = TextField('Repeat email')
 
 
-class User(UserMixin):
-    def __init__(self, username, password, email=None):
-        self.username = username
-        self.password = password
-        self.email = email
-        self.id = 1
-        self.is_valid = False
+class User(db.Model):
 
-    def is_authenticated(self):
-        return self.is_valid
-
-    def is_active(self):
-        ## sql look up compare with vars and set ID
-        return True
-
-    @classmethod
-    def get(self, user_id):
-        ## db grab that user
-        cur = g.db.execute('select username, email from users where id=?',
-                           [user_id])
-        db_user = str(cur.fetchone()[0])
-        new_user = self(db_user[0], "", db_user[1])
-        new_user.is_valid = True
-        new_user.id = user_id
-        return new_user
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True)
+    email = db.Column(db.String(120), unique=True)
+    password = db.Column(db.String(60))
+    
 
 
 @login_required

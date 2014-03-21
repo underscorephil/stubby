@@ -1,6 +1,8 @@
 from flask import Flask
 from stubby.utils.db import close_stats_db, close_url_db
-
+from stubby.utils.sessions import get_session_manager
+from flask.ext.sqlalchemy import SQLAlchemy
+from stubby.views import admin, stub
 
 DATABASE = '/tmp/redirect.db'
 DEBUG = True
@@ -11,9 +13,18 @@ app = Flask(__name__)
 app.debug = True
 app.config.from_object(__name__)
 app.config.from_envvar('FLASK_SETTINGS', silent=True)
+# SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+db = SQLAlchemy(app)
+login_manager = get_session_manager()
+login_manager.login_view = "login"
+login_manager.login_message = "Please login to access this feature"
+login_manager.refresh_view = "reauth"
 
-from stubby.utils.sessions import get_session_manager
-from stubby.views import admin, stub
+
+@app.before_first_request
+def before_first_request():
+    db.create_all()
 
 
 @app.teardown_request
@@ -44,8 +55,6 @@ app.add_url_rule('/login', endpoint='login', view_func=admin.login,
                  methods=['GET', 'POST'])
 
 app.add_url_rule('/logout', endpoint='logout', view_func=admin.logout)
-
-
 
 
 if __name__ == "__main__":

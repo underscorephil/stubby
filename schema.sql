@@ -17,3 +17,4 @@ create table requests (
     remote_addr string not null,
     stub string not null
 );
+insert into users (username, password, email) values ('phil', 'phil', 'phil@phil.com');
